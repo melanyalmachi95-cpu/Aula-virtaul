@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula Virtual - Alumno</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+    <div class="container">
+        <header class="dashboard-header">
+            <h1 id="bienvenidaAlumno"></h1>
+            <button id="logoutBtn" class="btn btn-secondary">Cerrar Sesión</button>
+        </header>
+        
+        <div class="dashboard-content">
+            <section class="tasks-section">
+                <h2>Tareas Disponibles</h2>
+                <div id="listaTareasAlumno"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal de Entrega -->
+    <div id="modal-overlay"></div>
+    <div id="modal-entrega" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Entregar Tarea</h3>
+                <span class="btn-cerrar" onclick="cerrarModalEntrega()">&times;</span>
+            </div>
+            <form id="form-entrega">
+                <input type="hidden" id="entrega-tarea-id">
+                <input type="hidden" id="entrega-tarea-titulo">
+                
+                <div class="form-group">
+                    <label for="entrega-comentario">Comentario de entrega:</label>
+                    <textarea id="entrega-comentario" rows="4" placeholder="Escribe tu entrega aquí..." required></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarModalEntrega()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Enviar Entrega</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/tareas.js"></script>
+    <script src="js/entregas.js"></script>
+</body>
+<script type="module">
+    // Importar Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDBJFWiHUxDAHCpzMsPYoK4t4pqP4UfmYQ",
+        authDomain: "aula-virtual-c580b.firebaseapp.com",
+        projectId: "aula-virtual-c580b",
+        storageBucket: "aula-virtual-c580b.firebasestorage.app",
+        messagingSenderId: "634153384044",
+        appId: "1:634153384044:web:62a2a3ad9ecfd497e94049"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Hacer disponibles globalmente para otros scripts
+    window.auth = auth;
+    window.db = db;
+    window.signOut = signOut;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs;
+    window.query = query;
+    window.where = where;
+    window.orderBy = orderBy;
+    window.doc = doc;
+    window.getDoc = getDoc;
+
+    console.log("✅ Firebase conectado correctamente");
+
+    // Función para abrir modal de entrega
+    window.abrirModalEntrega = function(tareaId, tareaTitulo) {
+        const modal = document.getElementById('modal-entrega');
+        const overlay = document.getElementById('modal-overlay');
+        if (!modal || !overlay) return;
+
+        document.getElementById('entrega-tarea-id').value = tareaId;
+        document.getElementById('entrega-tarea-titulo').value = tareaTitulo;
+        document.getElementById('entrega-comentario').value = '';
+
+        modal.style.display = 'block';
+        overlay.style.display = 'block';
+    };
+
+    // Función para cerrar modal
+    window.cerrarModalEntrega = function() {
+        const modal = document.getElementById('modal-entrega');
+        const overlay = document.getElementById('modal-overlay');
+        if (modal) modal.style.display = 'none';
+        if (overlay) overlay.style.display = 'none';
+    };
+
+    // Inicializar todo
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log("🏃 DOM cargado en alumno.html");
+        
+        // Verificar sesión
+        const usuario = getUsuarioActual();
+        if (!usuario || usuario.rol !== 'alumno') {
+            console.log("❌ No hay sesión o rol incorrecto");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // Mostrar bienvenida
+        document.getElementById('bienvenidaAlumno').textContent = `Bienvenido Alumno ${usuario.nombre}`;
+        console.log("✅ Bienvenida mostrada:", usuario.nombre);
+
+        // Esperar a que Firebase esté listo y luego cargar tareas con estados
+        setTimeout(async () => {
+            await mostrarTareasConEstados('listaTareasAlumno');
+        }, 300);
+
+        // Event listener para botón de cerrar sesión
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async function() {
+                console.log("🔴 Botón de logout clickeado");
+                try {
+                    await signOut(auth);
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error("Error al cerrar sesión:", error);
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        // Event listener para formulario de entrega
+        const formEntrega = document.getElementById('form-entrega');
+        if (formEntrega) {
+            formEntrega.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const tareaId = document.getElementById('entrega-tarea-id').value;
+                const tareaTitulo = document.getElementById('entrega-tarea-titulo').value;
+                const comentario = document.getElementById('entrega-comentario').value;
+
+                const exito = await crearEntrega(tareaId, tareaTitulo, comentario, null); // Sin archivo
+                if (exito) {
+                    cerrarModalEntrega();
+                    await mostrarTareasConEstados('listaTareasAlumno');
+                }
+            });
+        }
+
+        // Event listener para cerrar modal al hacer clic en overlay
+        const overlay = document.getElementById('modal-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', cerrarModalEntrega);
+        }
+    });
+
+    // Función para mostrar tareas con estado de entrega
+    window.mostrarTareasConEstados = async function(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const tareas = await obtenerTareas();
+        const misEntregas = await obtenerEntregasAlumno(getUsuarioActual().uid);
+
+        if (tareas.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    No hay tareas disponibles 📭
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="tareas-grid">';
+        for (const tarea of tareas) {
+            let fechaLimite = 'Sin fecha';
+            if (tarea.fechaLimite) {
+                if (tarea.fechaLimite.toDate) {
+                    fechaLimite = tarea.fechaLimite.toDate().toLocaleDateString();
+                } else if (tarea.fechaLimite instanceof Date) {
+                    fechaLimite = tarea.fechaLimite.toLocaleDateString();
+                }
+            }
+            
+            const profesor = tarea.creadoPorNombre || tarea.creadoPorEmail || 'Profesor';
+            
+            // Verificar estado de entrega
+            const miEntrega = misEntregas.find(e => e.tareaId === tarea.id);
+            let estadoHTML = '';
+            let botonHTML = '';
+            
+            if (miEntrega) {
+                if (miEntrega.revisado) {
+                    estadoHTML = `<span class="estado estado-revisado">Entregada ✅ Calificación: ${miEntrega.calificacion}/10</span>`;
+                } else {
+                    estadoHTML = `<span class="estado estado-entregado">Entregada ✅ Pendiente de revisión</span>`;
+                }
+            } else {
+                estadoHTML = `<span class="estado estado-pendiente">Pendiente ⏳</span>`;
+                botonHTML = `<button class="btn btn-success btn-entregar" onclick="abrirModalEntrega('${tarea.id}', '${tarea.titulo.replace(/'/g, "\\'")}')">Entregar Tarea</button>`;
+            }
+
+            html += `
+                <div class="tarea-card">
+                    <h3>📚 ${escapeHtml(tarea.titulo)}</h3>
+                    <p>${escapeHtml(tarea.descripcion)}</p>
+                    <small>📅 Fecha límite: ${fechaLimite}</small>
+                    <small>👨‍🏫 Profesor: ${escapeHtml(profesor)}</small>
+                    <div class="tarea-footer">
+                        ${estadoHTML}
+                        ${botonHTML}
+                    </div>
+                </div>
+            `;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    };
+
+    // Función auxiliar para escapar HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+</html>

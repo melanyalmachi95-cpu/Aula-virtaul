@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase</title>
+</head>
+<body>
+    <h1>Prueba de Firebase</h1>
+    <div id="status"></div>
+    
+    <script type="module">
+        // Importar Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+        
+        const statusDiv = document.getElementById('status');
+        
+        // Tu configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBJFWiHUxDAHCpzMsPYoK4t4pqP4UfmYQ",
+            authDomain: "aula-virtual-c580b.firebaseapp.com",
+            projectId: "aula-virtual-c580b",
+            storageBucket: "aula-virtual-c580b.firebasestorage.app",
+            messagingSenderId: "634153384044",
+            appId: "1:634153384044:web:62a2a3ad9ecfd497e94049"
+        };
+        
+        try {
+            // Inicializar Firebase
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            
+            statusDiv.innerHTML = '<p>✅ Firebase inicializado correctamente!</p>';
+            console.log("Firebase inicializado:", app);
+            
+            // Probar conexión a Firestore
+            await getDoc(doc(db, "test", "test"));
+            statusDiv.innerHTML += '<p>✅ Conexión a Firestore OK!</p>';
+            console.log("Firestore OK");
+            
+            statusDiv.innerHTML += '<p>✅ Todo está funcionando! Ahora prueba tu aplicación principal.</p>';
+            
+        } catch (error) {
+            statusDiv.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+            console.error("Error en Firebase:", error);
+        }
+    </script>
+</body>
+</html>

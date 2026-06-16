@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula Virtual - Revisar Entregas</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+    <div class="container">
+        <header class="dashboard-header">
+            <h1>Revisar Entregas</h1>
+            <div class="header-buttons">
+                <a href="profesor.html" class="btn btn-secondary">Volver al Panel</a>
+                <button id="logoutBtn" class="btn btn-secondary">Cerrar Sesión</button>
+            </div>
+        </header>
+        
+        <div class="dashboard-content">
+            <section class="tasks-section">
+                <h2>Todas las Entregas</h2>
+                <div id="lista-entregas"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal de Detalle de Entrega -->
+    <div id="modal-overlay"></div>
+    <div id="modal-entrega-detalle" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalle de Entrega</h3>
+                <span class="btn-cerrar" onclick="cerrarModalEntrega()">&times;</span>
+            </div>
+            <form id="form-calificar">
+                <input type="hidden" id="detalle-entrega-id">
+                
+                <div class="form-group">
+                    <label>Tarea:</label>
+                    <p id="detalle-tarea"></p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Alumno:</label>
+                    <p id="detalle-alumno"></p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Comentario:</label>
+                    <p id="detalle-comentario"></p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Fecha de Entrega:</label>
+                    <p id="detalle-fecha"></p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="detalle-calificacion">Calificación (0-10):</label>
+                    <input type="number" id="detalle-calificacion" min="0" max="10" step="0.1" required>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarModalEntrega()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Calificación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/revisar-entregas.js"></script>
+</body>
+<script type="module">
+    // Importar Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDBJFWiHUxDAHCpzMsPYoK4t4pqP4UfmYQ",
+        authDomain: "aula-virtual-c580b.firebaseapp.com",
+        projectId: "aula-virtual-c580b",
+        storageBucket: "aula-virtual-c580b.firebasestorage.app",
+        messagingSenderId: "634153384044",
+        appId: "1:634153384044:web:62a2a3ad9ecfd497e94049"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Hacer disponibles globalmente para otros scripts
+    window.auth = auth;
+    window.db = db;
+    window.signOut = signOut;
+    window.collection = collection;
+    window.getDocs = getDocs;
+    window.query = query;
+    window.where = where;
+    window.orderBy = orderBy;
+    window.doc = doc;
+    window.getDoc = getDoc;
+    window.updateDoc = updateDoc;
+
+    console.log("✅ Firebase conectado correctamente");
+    
+    // Inicializar todo
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log("🏃 DOM cargado en profesor-entregas.html");
+        
+        // Verificar sesión
+        const usuario = getUsuarioActual();
+        if (!usuario || usuario.rol !== 'profesor') {
+            console.log("❌ No hay sesión o rol incorrecto");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        console.log("✅ Bienvenido Profesor:", usuario.nombre);
+
+        // Esperar a que Firebase esté listo y luego cargar entregas
+        setTimeout(async () => {
+            await mostrarEntregasProfesor('lista-entregas');
+        }, 300);
+
+        // Event listener para botón de cerrar sesión
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async function() {
+                console.log("🔴 Botón de logout clickeado");
+                try {
+                    await signOut(auth);
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error("Error al cerrar sesión:", error);
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        // Event listener para formulario de calificar
+        const formCalificar = document.getElementById('form-calificar');
+        if (formCalificar) {
+            formCalificar.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const entregaId = document.getElementById('detalle-entrega-id').value;
+                const calificacion = parseFloat(document.getElementById('detalle-calificacion').value);
+                
+                if (isNaN(calificacion) || calificacion < 0 || calificacion > 10) {
+                    alert('❌ Calificación debe estar entre 0 y 10');
+                    return;
+                }
+                
+                const exito = await calificarEntrega(entregaId, calificacion);
+                if (exito) {
+                    cerrarModalEntrega();
+                    await mostrarEntregasProfesor('lista-entregas');
+                }
+            });
+        }
+
+        // Event listener para cerrar modal al hacer clic en overlay
+        const overlay = document.getElementById('modal-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', cerrarModalEntrega);
+        }
+    });
+</script>
+</html>

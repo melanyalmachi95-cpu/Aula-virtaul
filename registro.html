@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula Virtual - Registro</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+    <div class="container">
+        <div class="auth-card">
+            <h1>Aula Virtual</h1>
+            <h2>Registrarse</h2>
+            <form id="registroForm">
+                <div class="form-group">
+                    <label for="registroNombre">Nombre</label>
+                    <input type="text" id="registroNombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="registroEmail">Email</label>
+                    <input type="email" id="registroEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registroPassword">Contraseña</label>
+                    <input type="password" id="registroPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="registroRol">Rol</label>
+                    <select id="registroRol" required>
+                        <option value="">Selecciona un rol</option>
+                        <option value="alumno">Alumno</option>
+                        <option value="profesor">Profesor</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Registrarse</button>
+            </form>
+            <p class="auth-link">¿Ya tienes cuenta? <a href="index.html">Iniciar Sesión</a></p>
+        </div>
+    </div>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+<script type="module">
+  // Importar Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+  // Configuración de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDBJFWiHUxDAHCpzMsPYoK4t4pqP4UfmYQ",
+    authDomain: "aula-virtual-c580b.firebaseapp.com",
+    projectId: "aula-virtual-c580b",
+    storageBucket: "aula-virtual-c580b.firebasestorage.app",
+    messagingSenderId: "634153384044",
+    appId: "1:634153384044:web:62a2a3ad9ecfd497e94049"
+  };
+
+  // Inicializar Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Hacer disponibles globalmente para otros scripts
+  window.auth = auth;
+  window.db = db;
+  window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+  window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+  window.signOut = signOut;
+  window.collection = collection;
+  window.addDoc = addDoc;
+  window.getDocs = getDocs;
+  window.query = query;
+  window.where = where;
+  window.orderBy = orderBy;
+  window.doc = doc;
+  window.setDoc = setDoc;
+  window.getDoc = getDoc;
+
+  console.log("✅ Firebase conectado correctamente");
+</script>
+</html>

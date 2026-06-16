@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula Virtual - Profesor</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+    <div class="container">
+        <header class="dashboard-header">
+            <h1 id="bienvenidaProfesor"></h1>
+            <div class="header-buttons">
+                <a href="profesor-entregas.html" class="btn btn-success">Ver Entregas</a>
+                <button id="logoutBtn" class="btn btn-secondary">Cerrar Sesión</button>
+            </div>
+        </header>
+        
+        <div class="dashboard-content">
+            <section class="create-task-section">
+                <h2>Crear Nueva Tarea</h2>
+                <form id="crearTareaForm">
+                    <div class="form-group">
+                        <label for="tareaTitulo">Título</label>
+                        <input type="text" id="tareaTitulo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tareaDescripcion">Descripción</label>
+                        <textarea id="tareaDescripcion" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="tareaFechaLimite">Fecha Límite</label>
+                        <input type="date" id="tareaFechaLimite" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Guardar Tarea</button>
+                </form>
+            </section>
+            
+            <section class="tasks-section">
+                <h2>Mis Tareas Creadas</h2>
+                <div id="listaTareasProfesor" class="tasks-list"></div>
+            </section>
+        </div>
+    </div>
+    <script src="js/auth.js"></script>
+    <script src="js/tareas.js"></script>
+    <script src="js/main.js"></script>
+</body>
+<script type="module">
+  // Importar Firebase importante si no no se conecta y no funciona nada
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+  // Configuración de Firebase esto es directamente de mi cuenta de firebase asi que no lo comparto con nadie mas por seguridad
+  const firebaseConfig = {
+    apiKey: "AIzaSyDBJFWiHUxDAHCpzMsPYoK4t4pqP4UfmYQ",
+    authDomain: "aula-virtual-c580b.firebaseapp.com",
+    projectId: "aula-virtual-c580b",
+    storageBucket: "aula-virtual-c580b.firebasestorage.app",
+    messagingSenderId: "634153384044",
+    appId: "1:634153384044:web:62a2a3ad9ecfd497e94049"
+  };
+
+  // Inicializar Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Hacer disponibles globalmente para otros scripts
+  window.auth = auth;
+  window.db = db;
+  window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+  window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+  window.signOut = signOut;
+  window.collection = collection;
+  window.addDoc = addDoc;
+  window.getDocs = getDocs;
+  window.query = query;
+  window.where = where;
+  window.orderBy = orderBy;
+  window.doc = doc;
+  window.setDoc = setDoc;
+  window.getDoc = getDoc;
+  window.deleteDoc = deleteDoc;
+  window.borrarTarea = borrarTarea;
+
+  console.log("✅ Firebase conectado correctamente");
+</script>
+</html>
